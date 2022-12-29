@@ -1,12 +1,13 @@
 import uuid, defs
+from models import AddTaskCommand, UpdateTaskCommand
 
 class TaskRepository:
     def __init__(self):
         self.tasks = []
 
-    def addTask(self, user_id, text):
+    def addTask(self, user_id, cmd: AddTaskCommand):
         task_id = uuid.uuid4().hex
-        self.tasks += [{'task_id': task_id, 'user_id':user_id, 'text':text, 'done':False, 'archived':False}]
+        self.tasks += [{'task_id': task_id, 'user_id':user_id, 'text':cmd.text, 'done':False, 'archived':False, 'category_id': cmd.category_id}]
         return defs.ERR_NONE, task_id
 
     def updateTask(self, user_id, task_id, done, archived, text):

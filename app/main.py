@@ -3,7 +3,7 @@ from taskrepo import TaskRepository
 from userrepo import UserRepository
 from fastapi import FastAPI, Body, Header, HTTPException
 import defs
-from models import RegistrationAccountInfo
+from models import RegistrationAccountInfo, UpdateAccountCommand, AddTaskCommand
 
 app = FastAPI(openapi_tags=defs.api_tags)
 
@@ -19,8 +19,8 @@ def tasks_get_by_user(user_id:str):
     return repo.getUserTasks(user_id)
 
 @app.put("/task/{user_id}", tags=['Tasks'])
-def task_add_by_user(user_id:str, data:dict = Body()):
-    return repo.addTask(user_id, data['text'])
+def task_add_by_user(user_id:str, cmd:AddTaskCommand = Body()):
+    return repo.addTask(user_id, cmd)
 
 @app.post("/task/{user_id}/{task_id}", tags=['Tasks'])
 def task_update_by_user(user_id:str, task_id:str, data:dict = Body()):
@@ -42,19 +42,19 @@ def user_register(model:RegistrationAccountInfo = Body()):
     err, user_id = userRepo.addUser(model)
     if err == defs.ERR_ALREADY_EXISTS:
         return HTTPException(status_code=400, detail=f'Account already exists: {model.user_id}')
-    return user_id
-    
+    return { 'user_id': user_id, 'activated':True, 'name': model.name, 'phone': model.phone, 'email': model.email }
+
 
 @app.post("/user", tags=['Auth'])
-def user_update(user_id:str=Header(), model:dict = Body()):
-    return userRepo.addUser(model['user_id'], model['password'], model['name'], model['phone'])
+def user_update(device_id:str=Header(), token:str=Header(), cmd:UpdateAccountCommand = Body()):
+    return userRepo.updateUser(device_id, token, cmd)
 
 @app.post("/user/login", tags=['Auth'])
-def user_login(device_id:str = Header(), user_id:str=Body(), password:str=Body()):
+def user_login(device_id:str = Header(default='test-device'), user_id:str=Body(default='tester_x'), password:str=Body(default='123456')):
     return userRepo.login(user_id, password, device_id)
 
 @app.get("/users", tags=['Auth'])
-def get_all_users(apikey:str = Header()):
+def get_all_users(apikey:str = Header(default='dev.master')):
     if apikey == 'dev.master':
         return userRepo.getAll()
     return HTTPException(status_code=400, detail='You are not allowed')
